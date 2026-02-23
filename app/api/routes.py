@@ -4,6 +4,9 @@ from typing import Dict, Any, List
 from app.services.email_topic_inference import EmailTopicInferenceService
 from app.dataclasses import Email
 
+import json
+import os
+
 router = APIRouter()
 
 class EmailRequest(BaseModel):
@@ -24,6 +27,10 @@ class EmailClassificationResponse(BaseModel):
 class EmailAddResponse(BaseModel):
     message: str
     email_id: int
+    
+class EmailAddTopic(BaseModel):
+    topic: str
+    description: str
 
 @router.post("/emails/classify", response_model=EmailClassificationResponse)
 async def classify_email(request: EmailRequest):
@@ -47,6 +54,36 @@ async def topics():
     inference_service = EmailTopicInferenceService()
     info = inference_service.get_pipeline_info()
     return {"topics": info["available_topics"]}
+    
+### Adding possiblity to post topics    
+@router.post("/topics")
+async def add_topic(request: EmailAddTopic):
+    try:
+        
+        data_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'topic_keywords.json')
+        
+        with open(data_file, "r") as f:
+            topics = json.load(f)
+
+        
+        if request.topic in topics:
+            raise HTTPException(status_code=400, detail="Topic already exists")
+
+        
+        topics[request.topic] = {
+            "description": request.description
+        }
+
+    
+        with open(data_file, "w") as f:
+            json.dump(topics, f, indent=2)
+
+        return {
+            "message": "Topic added successfully",
+            "topic": request.topic
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/pipeline/info") 
 async def pipeline_info():

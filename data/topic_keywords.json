@@ -13,5 +13,8 @@
   },
   "support": {
     "description": "Customer support, help requests, and technical issues"
+  },
+  "hockey": {
+    "description": "skates stick puck on ice"
   }
 }

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from app.services.email_topic_inference import EmailTopicInferenceService
 from app.dataclasses import Email
 
@@ -32,6 +32,11 @@ class EmailAddTopic(BaseModel):
     topic: str
     description: str
 
+class EmailStoreRequest(BaseModel):
+    subject: str
+    body: str
+    ground_truth: Optional[str] = None
+
 @router.post("/emails/classify", response_model=EmailClassificationResponse)
 async def classify_email(request: EmailRequest):
     try:
@@ -54,10 +59,46 @@ async def topics():
     inference_service = EmailTopicInferenceService()
     info = inference_service.get_pipeline_info()
     return {"topics": info["available_topics"]}
+
+### Adding emails store endpoint.
+
+@router.post("/emails/store", response_model=EmailAddResponse)
+async def store_email(request: EmailStoreRequest):
+    """Store an email with optional ground truth label"""
+    try:
+        data_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'emails.json')
+        
+        # Load existing emails
+        with open(data_file, "r") as f:
+            emails = json.load(f)
+        
+        # Create new email entry with auto-incrementing ID
+        email_id = max([e.get("id", 0) for e in emails], default=0) + 1
+        
+        email_entry = {
+            "id": email_id,
+            "subject": request.subject,
+            "body": request.body,
+            "ground_truth": request.ground_truth
+        }
+        
+        emails.append(email_entry)
+        
+        # Save updated emails
+        with open(data_file, "w") as f:
+            json.dump(emails, f, indent=2)
+        
+        return EmailAddResponse(
+            message="Email stored successfully",
+            email_id=email_id
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
 ### Adding possiblity to post topics    
 @router.post("/topics")
 async def add_topic(request: EmailAddTopic):
+    """Add a new email topic with description"""
     try:
         
         data_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'topic_keywords.json')

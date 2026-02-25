@@ -40,7 +40,8 @@ class EmailAddTopic(BaseModel):
 class EmailStoreRequest(BaseModel):
     subject: str
     body: str
-    ground_truth: Optional[str] = None
+    topic: Optional[str] = None
+    ground_truth: Optional[bool] = None
 
 @router.post("/emails/classify", response_model=EmailClassificationResponse)
 async def classify_email(request: EmailRequest):
@@ -89,6 +90,7 @@ async def store_email(request: EmailStoreRequest):
             "id": email_id,
             "subject": request.subject,
             "body": request.body,
+            "topic": request.topic,
             "ground_truth": request.ground_truth
         }
         

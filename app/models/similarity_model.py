@@ -129,13 +129,24 @@ class EmailClassifierModel:
                 "similar_email": None
             }
         
+        if not similar_email.get("ground_truth", False):
+            # Similar email is not verified/ground truth, rely on topic classification
+            return {
+                "winner": "topic",
+                "predicted_topic": predicted_topic,
+                "confidence_score": float(topic_score),
+                "similar_email": None
+            }
+        
         email_similarity_score = similar_email["similarity_score"]
+        similar_email_topic = similar_email.get("topic")
         
         if email_similarity_score > topic_score:
-            # Email similarity is higher, use the similar email's ground truth if available
+            # Email similarity is higher and has ground truth, use the similar email's topic if available
+            final_topic = similar_email_topic if similar_email_topic else predicted_topic
             return {
                 "winner": "email",
-                "predicted_topic": similar_email.get("ground_truth", predicted_topic),
+                "predicted_topic": final_topic,
                 "confidence_score": float(email_similarity_score),
                 "similar_email": similar_email,
                 "topic_score": float(topic_score)

@@ -20,9 +20,14 @@ class EmailWithTopicRequest(BaseModel):
 
 class EmailClassificationResponse(BaseModel):
     predicted_topic: str
+    confidence_score: float
+    classifier_winner: str
     topic_scores: Dict[str, float]
     features: Dict[str, Any]
     available_topics: List[str]
+    most_similar_email: Optional[Dict[str, Any]] = None
+    topic_similarity_score: Optional[float] = None
+    email_similarity_score: Optional[float] = None
 
 class EmailAddResponse(BaseModel):
     message: str
@@ -46,9 +51,14 @@ async def classify_email(request: EmailRequest):
         
         return EmailClassificationResponse(
             predicted_topic=result["predicted_topic"],
+            confidence_score=result["confidence_score"],
+            classifier_winner=result["classifier_winner"],
             topic_scores=result["topic_scores"],
             features=result["features"],
-            available_topics=result["available_topics"]
+            available_topics=result["available_topics"],
+            most_similar_email=result["most_similar_email"],
+            topic_similarity_score=result["topic_similarity_score"],
+            email_similarity_score=result["email_similarity_score"]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
